@@ -10,44 +10,20 @@
 #include "spi.h"
 #include "sd.h"
 
-void send_command_no_address(uint8_t CMD, uint8_t CRC)
-{
-	uint8_t data_array[CMD_SIZE];
-	//01 is required to be at the start of the byte
-	data_array[0] = CMD ^ 0x40;
-	data_array[1] = 0x00;
-	data_array[2] = 0x00; 
-	data_array[3] = 0x00; 
-	data_array[4] = 0x00; 
-	data_array[5] = CRC;
-	
-	for(uint8_t i=0; i < CMD_SIZE; i++)
-	{
-		printf("0x%x, ", data_array[i]);
-	}
-	printf("\n");
-	
-	spi_send(data_array, CMD_SIZE);
-}
-
 void send_command(uint8_t CMD, uint16_t argH, uint16_t argL, uint8_t CRC)
 {
 	uint8_t data_array[CMD_SIZE];
-	//uint16_t addrH = (argH << 9);
-	//uint16_t addrL = (argL << 9);	
+	//SD card required the MSB to be sent first
+	uint16_t addrH = (argH << 9);	
+	uint16_t addrL = (argL << 9);	
+	
 	//01 is required to be at the start of the byte
 	data_array[0] = CMD ^ 0x40;
-	data_array[1] = 0x00;//(uint8_t) (addrH && 0xFF);	
-	data_array[2] = 0x24;//(uint8_t) (addrH >> 8);
-	data_array[3] = 0x68;//(uint8_t) (addrH && 0xFF);
-	data_array[4] = 0x00;//(uint8_t) (addrH >> 8);
+	data_array[1] = ((uint8_t) addrH) && 0xFF;	
+	data_array[2] = (addrH) >> 8;
+	data_array[3] = (addrL) >> 8;	
+	data_array[4] = ((uint8_t) addrL) && 0xFF;
 	data_array[5] = CRC;
-	
-	for(uint8_t i=0; i < CMD_SIZE; i++)
-	{
-		printf("0x%x, ", data_array[i]);
-	}
-	printf("\n");
 	
 	spi_send(data_array, CMD_SIZE);	
 }
@@ -100,7 +76,7 @@ uint8_t sd_init(void)
 	printf("Send idle command\n");
 	
 	//Request the card to go into idle state
-    send_command_no_address(GO_IDLE_STATE, IDLE_CRC);
+    send_command(GO_IDLE_STATE, 0x00, 0x00, IDLE_CRC);
 	
 	printf("Waiting for response\n");	
 	
@@ -124,7 +100,7 @@ uint8_t sd_init(void)
 	uint8_t i;
 	for(i = 0; i < 255; i++)
 	{
-		send_command_no_address(SEND_OP_COND, NO_CRC);
+		send_command(SEND_OP_COND, 0x00, 0x00, NO_CRC);
 		if (check_response(OK) == 1)
 		{
 			break;

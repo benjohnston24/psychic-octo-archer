@@ -8,7 +8,7 @@
 #include <avr/io.h>
 #include "usart.h"
 
-void uart_init(void)
+void usart_init(void)
 {
 	// Setup the UART baud rate
 	UBRR0H = (BAUD_RATE_UBRR >> 8);
@@ -20,17 +20,23 @@ void uart_init(void)
 	UCSR0C = _BV(UCSZ01) | _BV(UCSZ00);
 }
 
-void uart_write(uint8_t byte)
+void usart_write(uint8_t byte)
 {
 	while (!(UCSR0A & (1 << UDRE0)));
 	UDR0 = byte;
 }
 
-int uart_stream_write(char c, FILE *stream)
+int usart_stream_write(char c, FILE *stream)
 {
 	if (c == '\n')
-	uart_stream_write('\r', stream);
+	usart_stream_write('\r', stream);
 
-	uart_write(c);
+	usart_write(c);
 	return 0;
+}
+
+uint8_t usart_read(void)
+{
+	while (!(UCSR0A & (1 << RXC0)));
+	return UDR0;
 }
