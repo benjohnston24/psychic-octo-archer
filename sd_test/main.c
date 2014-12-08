@@ -8,13 +8,14 @@
 #include <avr/io.h>
 #include <avr/delay.h>
 #include <avr/interrupt.h>
+#include <string.h>
 #include "usart.h"
 #include "spi.h"
 #include "sd.h"
 #include "adc.h"
 #include "timing.h"
 
-uint16_t step = 0, data_counter = 0, block_counter = 0, fake_data = 0;
+uint8_t step = 0, data_counter = 0, block_counter = 0, fake_data = 0;
 uint8_t counter = 0, duration = 0, channel = 1, timer_running = 0;
 uint16_t data[BLOCK_SIZE], data_to_write[BLOCK_SIZE];
 
@@ -69,7 +70,7 @@ void main(void)
 			step = 1;
 			break;
 			
-	    case 2: 	// Configure the SPI
+	    case 1: 	// Configure the SPI
 			spi_init();
 			printf("SPI Configured\n");
 			if(sd_init() == 1){
@@ -78,7 +79,7 @@ void main(void)
 			else{ step = 999;}
 			break;
 			
-		case 1: //Wait for receipt of duration of test
+		case 2: //Wait for receipt of duration of test
 			printf("Requesting test duration:\n");		    
 			//duration = usart_read();
 			printf("Received %d\n", duration);
