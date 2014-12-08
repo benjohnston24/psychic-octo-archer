@@ -15,22 +15,41 @@
 #include "adc.h"
 #include "timing.h"
 
-uint8_t step = 0, data_counter = 0, block_counter = 0, fake_data = 0;
-uint8_t counter = 0, duration = 0, channel = 1, timer_running = 0;
-uint16_t data[BLOCK_SIZE], data_to_write[BLOCK_SIZE];
+uint16_t step = 0, data_counter = 0, block_counter = 1;
+uint8_t counter = 0, duration = 0, channel = 1, timer_running = 0, trigger_log = 0, fake_data = 0;
+uint8_t *data, *data_start, *data_to_write;
 
+
+void copy_data(void)
+{
+	for (uint16_t k = 0; k < BLOCK_SIZE; k++)
+	{
+		data_to_write[k] = data[k];
+		//printf("%d, ", data_to_write[k]);
+	}
+}
 
 //Interrupt service routine for analogue to digital converter
 ISR(ADC_vect)
 {
 	uint16_t adc_data = ADCW;
 	//printf("%d: %d\n", channel, ADCW);
-	//ADMUX &= 0xF0;                    	//Clear the older channel that was read
+	//ADMUX &= 0xF0;                     //Clear the older channel that was read
 	//ADMUX |= channel;                	//Defines the new ADC channel to be read
 	//printf("%d\n", fake_data);	
 	data[data_counter++] = fake_data++;
-	if (data_counter >= (BLOCK_SIZE - 1))
+	if (data_counter > (BLOCK_SIZE - 1))	
 	{
+		/*printf("\nOriginal Data:\n");
+		for (uint16_t k = 0; k < BLOCK_SIZE; k++)
+		{
+			printf("%d, ", data[k]);
+		}*/	
+		
+		//printf("\nData being copied:\n");	
+		copy_data();
+		trigger_log = 1;
+		data = data_start;
 		data_counter = 0;
 		block_counter++;
 	}
@@ -48,13 +67,13 @@ ISR(TIMER1_OVF_vect)
 {
 	//TCCR0B = 0x00;
 	counter++;
-	if (counter >= 2)
+	if (counter >= 1)
 	{   
 		timer_running = 0;
 	}
 }
 
-void main(void)
+int main(void)
 {	
 	while (1){
 	switch (step){
@@ -67,7 +86,18 @@ void main(void)
 			stdout = &usart_stdout;
 			printf("\n\n\n\n\n-------------------------------------------\n");
 			printf("Systems Configured\n");
-			step = 1;
+			data = calloc(BLOCK_SIZE, sizeof(uint8_t));
+			data_to_write = calloc(BLOCK_SIZE, sizeof(uint8_t));
+			data_start = data;
+			if((data != NULL) | (data_to_write != NULL))
+			{
+				step = 1;
+			}
+			else
+			{
+				printf("Error allocating memory for test data\n");
+				step = 999;
+			}
 			break;
 			
 	    case 1: 	// Configure the SPI
@@ -84,12 +114,12 @@ void main(void)
 			//duration = usart_read();
 			printf("Received %d\n", duration);
 			//Enable interrupts
-			sei();
+			//sei();
 			timer_running = 1;
-			step = 5;
+			step = 3;//5;
 			break;
 			
-		/*case 3:	//Write data
+		case 3:	//Write data
 			memset(data, 0x32, BLOCK_SIZE);
 			if(write_sector(0x12, 0x34, data) == 1){step = 4;}
 			else{ step = 999;}
@@ -98,20 +128,40 @@ void main(void)
 			
 		case 4:	//Read data back;
 			memset(data, 0x00, BLOCK_SIZE);
-			if(read_sector(0x12, 0x34, data_back) == 1){
+			if(read_sector(0x12, 0x34, data) == 1){
 				for(uint16_t i = 0; i < BLOCK_SIZE; i++)
 				{
-					printf("0x%x, ", data_back[i]);
+					printf("0x%x, ", data[i]);
 				}
 				step = 101;
 			}
 			else{ step = 999;}
-			break;*/
+			break;
 			
 		case 5: //Test reading time
 			if (timer_running == 0)
 			{
 				step = 7;
+			}
+			if (trigger_log == 1)
+			{
+				uint16_t memory_block = block_counter * BLOCK_SIZE;
+				memset(data_to_write, 0x32, BLOCK_SIZE);
+				for (uint16_t k = 0; k < BLOCK_SIZE; k++)
+				{
+					printf("%d, ", data_to_write[k]);
+				}			
+				if (write_sector((memory_block >> 8),
+				                  (memory_block), data_to_write) != 1)
+				{
+					cli();
+					timer1_stop();
+					adc_stop();					
+					step = 999;
+				}
+				printf("%x\n",  memory_block);
+				printf("%x\n",  (memory_block >> 8));
+				printf("%x\n",  (memory_block & 0x00FF));
 			}
 			break;
 			
@@ -131,8 +181,14 @@ void main(void)
 			 {
 				 printf("%d, ", data[k]);
 			 }
+			 printf("\nCopied Data:\n");
+			 for (uint16_t k = 0; k < data_counter; k++)
+			 {
+				 printf("%d, ", data_to_write[k]);
+			 }			 
 			 counter = 0;
 			 step = 1000;
+			 //Need to free data
 			 break;
 				
 		case 101: printf("Done\n"); step = 1000; HIGH_CS(); break;
