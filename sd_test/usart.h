@@ -24,6 +24,12 @@ void usart_write(uint8_t byte);
 uint8_t usart_read(void);
 int usart_stream_write(char c, FILE *stream);
 
-static FILE usart_stdout = FDEV_SETUP_STREAM(usart_stream_write, NULL, _FDEV_SETUP_WRITE);
+#define TRANSMIT 1
+
+#if (TRANSMIT == 1)
+	static FILE usart_stdout = FDEV_SETUP_STREAM(usart_stream_write, NULL, _FDEV_SETUP_WRITE);
+#else
+	static FILE usart_stdout = FDEV_SETUP_STREAM(NULL, NULL, _FDEV_SETUP_WRITE);
+#endif
 
 #endif /* USART_H_ */

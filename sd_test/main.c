@@ -17,38 +17,38 @@
 
 uint16_t step = 0, data_counter = 0, block_counter = 1;
 uint8_t counter = 0, duration = 0, channel = 1, timer_running = 0, trigger_log = 0, fake_data = 0;
-uint8_t *data, *data_start, *data_to_write;
+uint8_t *data[BLOCK_SIZE];
 
 
-void copy_data(void)
+/*void copy_data(void)
 {
 	for (uint16_t k = 0; k < BLOCK_SIZE; k++)
 	{
 		data_to_write[k] = data[k];
 		//printf("%d, ", data_to_write[k]);
 	}
-}
+}*/
 
 //Interrupt service routine for analogue to digital converter
 ISR(ADC_vect)
 {
 	uint16_t adc_data = ADCW;
 	//printf("%d: %d\n", channel, ADCW);
-	//ADMUX &= 0xF0;                     //Clear the older channel that was read
-	//ADMUX |= channel;                	//Defines the new ADC channel to be read
+	ADMUX &= 0xF0;                     //Clear the older channel that was read
+	ADMUX |= channel;                	//Defines the new ADC channel to be read
+	ADCSRA |= (1<<ADSC);               //Starts a new conversion		
 	//printf("%d\n", fake_data);	
 	data[data_counter++] = fake_data++;
 	if (data_counter > (BLOCK_SIZE - 1))	
 	{
+		//printf("Trigger Write\n");
 		//printf("Data Counter: %d", data_counter);
-		copy_data();
-		trigger_log = 1;
-		data = data_start;
+		//copy_data();
+		//data = data_start;
 		data_counter = 0;
 		block_counter++;
+        trigger_log = 1;		
 	}
-	
-	ADCSRA |= (1<<ADSC);               //Starts a new conversion	
 	channel++;
 	if (channel >= 4)
 	{
@@ -80,10 +80,10 @@ int main(void)
 			stdout = &usart_stdout;
 			printf("\n\n\n\n\n-------------------------------------------\n");
 			printf("Systems Configured\n");
-			data = calloc(BLOCK_SIZE, sizeof(uint8_t));
-			data_to_write = calloc(BLOCK_SIZE, sizeof(uint8_t));
-			data_start = data;
-			if((data != NULL) | (data_to_write != NULL))
+			//data = calloc(BLOCK_SIZE, sizeof(uint8_t));
+			//data_to_write = calloc(BLOCK_SIZE, sizeof(uint8_t));
+			//data_start = data;
+			/*if((data != NULL) | (data_to_write != NULL))
 			{
 				step = 1;
 			}
@@ -91,7 +91,8 @@ int main(void)
 			{
 				printf("Error allocating memory for test data\n");
 				step = 999;
-			}
+			}*/
+			step = 1;
 			break;
 			
 	    case 1: 	// Configure the SPI
@@ -137,20 +138,23 @@ int main(void)
 			{
 				step = 7;
 			}
+			//printf("Trigger Log: %d\n", trigger_log);
 			if (trigger_log == 1)
 			{
-				uint16_t memory_block = block_counter * BLOCK_SIZE;		
-				if (write_sector((memory_block >> 8),
-				                  (memory_block), data_to_write) != 1)
+				//timer1_stop();
+				//adc_stop();				
+				uint16_t memory_block = block_counter * BLOCK_SIZE;
+				//printf("Memory Block: %x\n", memory_block);
+				if (write_sector(memory_block >> 8,memory_block & 0x00FF, data) != 1)	
 				{
 					cli();
 					timer1_stop();
 					adc_stop();					
-					step = 999;
+					step = 7;
 				}
-				printf("%x\n",  memory_block);
-				printf("%x\n",  (memory_block >> 8));
-				printf("%x\n",  (memory_block & 0x00FF));
+				//data = data_start;
+				//timer1_start();
+				//adc_start();				
 			}
 			break;
 			
@@ -163,18 +167,26 @@ int main(void)
 			 timer1_stop();
 			 adc_stop();
 			 printf("Done\n");
-			 //Print the contents of the data
 			 printf("Block Counter: %d\n", block_counter);
-			 printf("Data Counter: %d\nData:\n", data_counter);
-			 for (uint16_t k = 0; k < data_counter; k++)
+			 usart_read();
+			 for (uint16_t i = 0; i <= block_counter; i++)
 			 {
-				 printf("%d, ", data[k]);
-			 }
-			 printf("\nCopied Data:\n");
-			 for (uint16_t k = 0; k < data_counter; k++)
-			 {
-				 printf("%d, ", data_to_write[k]);
-			 }			 
+				
+				memset(data, 0x00, BLOCK_SIZE);
+				uint16_t memory_block = i * BLOCK_SIZE;
+				if(read_sector(memory_block >> 8,memory_block & 0x00FF, data) == 1)
+				{
+					printf("Read Block: %d\n", i);
+					//for(uint16_t j = 0; j < BLOCK_SIZE; j++)
+					//{
+					//	printf("%d, ", data[j]);
+					//}
+				}
+				else
+				{
+					printf("Error reading back data\n");
+				}
+			}				 		 		 
 			 counter = 0;
 			 step = 1000;
 			 //Need to free data
