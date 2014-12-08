@@ -35,6 +35,9 @@
 #define DATA_TOKEN 0xFE //Data token
 #define DATA_WRITTEN 0xe5 //Token received when data is written
 
+#define INT_TO_HIGH_BYTE(integer)	(uint8_t) (integer >> 8)
+#define INT_TO_LOW_BYTE(integer)	(uint8_t) integer
+
 void send_command(uint8_t CMD, unsigned int argH, unsigned int argL, uint8_t CRC);
 uint8_t check_response(uint8_t test_response);
 uint8_t sd_init(void);

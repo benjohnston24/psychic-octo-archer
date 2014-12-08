@@ -15,7 +15,7 @@
 #include "timing.h"
 
 uint16_t step = 0;
-uint8_t counter = 0, duration = 0, channel = 1;
+uint8_t counter = 0, duration = 0, channel = 1, timer_running = 0;
 uint16_t data[BLOCK_SIZE];
 
 
@@ -23,7 +23,7 @@ uint16_t data[BLOCK_SIZE];
 ISR(ADC_vect)
 {
 	uint16_t data = ADCW;
-	printf("%d: %d\n", channel, ADCW);
+	//printf("%d: %d\n", channel, ADCW);
 	ADCSRA |= (1<<ADSC);
 	channel++;
 	if (channel >= 4)
@@ -39,7 +39,8 @@ ISR(TIMER1_OVF_vect)
 	counter++;
 	if (counter >= 2)
 	{   
-		step = 7;
+		printf("%d\n", step);
+		timer_running = 0;
 	}
 }
 
@@ -74,10 +75,11 @@ void main(void)
 			printf("Received %d\n", duration);
 			//Enable interrupts
 			sei();
+			timer_running = 1;
 			step = 5;
 			break;
 			
-		case 3:	//Write data
+		/*case 3:	//Write data
 			memset(data, 0x32, BLOCK_SIZE);
 			if(write_sector(0x12, 0x34, data) == 1){step = 4;}
 			else{ step = 999;}
@@ -94,10 +96,13 @@ void main(void)
 				step = 101;
 			}
 			else{ step = 999;}
-			break;
+			break;*/
 			
 		case 5: //Test reading time
-			step = 6;
+			if (timer_running == 0)
+			{
+				step = 7;
+			}
 			break;
 			
 		case 6:
@@ -106,6 +111,7 @@ void main(void)
 			
 		case 7:
 		     cli();
+			 printf("Done\n");
 			 counter = 0;
 			 step = 1;
 			 break;

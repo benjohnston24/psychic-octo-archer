@@ -38,12 +38,6 @@ void set_block_length(uint16_t block_len)
 	data_array[4] = 0x00;
 	data_array[5] = NO_CRC;
 	
-	for(uint8_t i=0; i < CMD_SIZE; i++)
-	{
-		printf("0x%x, ", data_array[i]);
-	}
-	printf("\n");
-	
 	spi_send(data_array, CMD_SIZE);	
 }
 
@@ -94,7 +88,7 @@ uint8_t sd_init(void)
 	spi_receive_byte();
 	LOW_CS();
 	
-	printf("Send OP command\n");
+	//printf("Send OP command\n");
 	
 	//Initialise SD card
 	uint8_t i;
@@ -107,7 +101,7 @@ uint8_t sd_init(void)
 		}
 	}
 	
-	printf("Sent op command: %d\n", i);
+	//printf("Sent op command: %d\n", i);
 	
 	//Check for the correct response
 	if (i == 254)
@@ -248,13 +242,15 @@ uint8_t read_sector(uint16_t addressH, uint16_t addressL, uint8_t* data)
 		HIGH_CS();
 		return 0;
 	}
+	printf("Data Token Received\n");	
 	
 	//Get data
-	printf("Waiting for data token\n");			
+	printf("Waiting for Data\n");			
 	for (uint16_t i = 0; i < BLOCK_SIZE; i++)
 	{
 		data[i] = spi_receive_byte();
 	}
+	printf("Data Received\n");		
 	
 	//Discard the CRC
 	spi_receive_byte();

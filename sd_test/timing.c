@@ -6,6 +6,7 @@
  */ 
 
 #include <avr/io.h>
+#include "timing.h"
 
 
 void timer0_compa_init(void)
@@ -32,9 +33,20 @@ void timer1_overflow_init(void)
 {
 	//No output pins used
 	TCCR1A = 0;
-	//Set the clock speed for F_CPU / 1024
-	TCCR1B |= (1 << CS02) | (0 << CS01) | (1 << CS00);
+	timer1_start();
 	//Configure the overflow interrupt
 	TIMSK1 |= (1 << TOIE1);
 	
+}
+
+void timer1_stop(void)
+{
+	TCCR1B = 0;
+}
+
+void timer1_start(void)
+{
+	//Set the clock speed for F_CPU / 1024
+    TCCR1B |= (1 << CS02) | (0 << CS01) | (1 << CS00);
+	//TCCR1B |= (0 << CS02) | (0 << CS01) | (1 << CS00);		
 }
