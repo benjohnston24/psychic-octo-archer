@@ -14,17 +14,27 @@
 #include "adc.h"
 #include "timing.h"
 
-uint16_t step = 0;
+uint16_t step = 0, data_counter = 0, block_counter = 0, fake_data = 0;
 uint8_t counter = 0, duration = 0, channel = 1, timer_running = 0;
-uint16_t data[BLOCK_SIZE];
+uint16_t data[BLOCK_SIZE], data_to_write[BLOCK_SIZE];
 
 
 //Interrupt service routine for analogue to digital converter
 ISR(ADC_vect)
 {
-	uint16_t data = ADCW;
+	uint16_t adc_data = ADCW;
 	//printf("%d: %d\n", channel, ADCW);
-	ADCSRA |= (1<<ADSC);
+	//ADMUX &= 0xF0;                    	//Clear the older channel that was read
+	//ADMUX |= channel;                	//Defines the new ADC channel to be read
+	//printf("%d\n", fake_data);	
+	data[data_counter++] = fake_data++;
+	if (data_counter >= (BLOCK_SIZE - 1))
+	{
+		data_counter = 0;
+		block_counter++;
+	}
+	
+	ADCSRA |= (1<<ADSC);               //Starts a new conversion	
 	channel++;
 	if (channel >= 4)
 	{
@@ -39,7 +49,6 @@ ISR(TIMER1_OVF_vect)
 	counter++;
 	if (counter >= 2)
 	{   
-		printf("%d\n", step);
 		timer_running = 0;
 	}
 }
@@ -71,7 +80,7 @@ void main(void)
 			
 		case 1: //Wait for receipt of duration of test
 			printf("Requesting test duration:\n");		    
-			duration = usart_read();
+			//duration = usart_read();
 			printf("Received %d\n", duration);
 			//Enable interrupts
 			sei();
@@ -111,9 +120,18 @@ void main(void)
 			
 		case 7:
 		     cli();
+			 timer1_stop();
+			 adc_stop();
 			 printf("Done\n");
+			 //Print the contents of the data
+			 printf("Block Counter: %d\n", block_counter);
+			 printf("Data Counter: %d\nData:\n", data_counter);
+			 for (uint16_t k = 0; k < data_counter; k++)
+			 {
+				 printf("%d, ", data[k]);
+			 }
 			 counter = 0;
-			 step = 1;
+			 step = 1000;
 			 break;
 				
 		case 101: printf("Done\n"); step = 1000; HIGH_CS(); break;
