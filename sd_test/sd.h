@@ -29,7 +29,7 @@
 #define IN_IDLE 0x01 //Response when the SD card enters idle
 #define OK 0x00 //Valid response
 #define BUSY 0x00 //Response received when SD card is busy
-#define BLOCK_SIZE 256//512 //Size of a single block
+#define BLOCK_SIZE 256 //Size of a single block
 #define BLOCK_LEN_HIGH 0x02 //512 bytes, high byte
 #define BLOCK_LEN_LOW 0x00 //512 bytes, low byte
 #define DATA_TOKEN 0xFE //Data token

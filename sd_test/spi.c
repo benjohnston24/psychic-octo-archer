@@ -56,7 +56,9 @@ void spi_send(uint8_t* data, uint16_t length)
 	for(int i=0; i < length; i++)
 	{
 		spi_send_byte(data[i]);
+		printf("%d ", data[i]);
 	}
+	printf("\n");
 }
 
 

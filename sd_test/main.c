@@ -40,13 +40,7 @@ ISR(ADC_vect)
 	data[data_counter++] = fake_data++;
 	if (data_counter > (BLOCK_SIZE - 1))	
 	{
-		/*printf("\nOriginal Data:\n");
-		for (uint16_t k = 0; k < BLOCK_SIZE; k++)
-		{
-			printf("%d, ", data[k]);
-		}*/	
-		
-		//printf("\nData being copied:\n");	
+		//printf("Data Counter: %d", data_counter);
 		copy_data();
 		trigger_log = 1;
 		data = data_start;
@@ -114,9 +108,9 @@ int main(void)
 			//duration = usart_read();
 			printf("Received %d\n", duration);
 			//Enable interrupts
-			//sei();
+			sei();
 			timer_running = 1;
-			step = 3;//5;
+			step = 5;
 			break;
 			
 		case 3:	//Write data
@@ -145,12 +139,7 @@ int main(void)
 			}
 			if (trigger_log == 1)
 			{
-				uint16_t memory_block = block_counter * BLOCK_SIZE;
-				memset(data_to_write, 0x32, BLOCK_SIZE);
-				for (uint16_t k = 0; k < BLOCK_SIZE; k++)
-				{
-					printf("%d, ", data_to_write[k]);
-				}			
+				uint16_t memory_block = block_counter * BLOCK_SIZE;		
 				if (write_sector((memory_block >> 8),
 				                  (memory_block), data_to_write) != 1)
 				{

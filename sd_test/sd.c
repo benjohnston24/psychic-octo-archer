@@ -140,6 +140,9 @@ uint8_t sd_init(void)
 
 uint8_t write_sector(uint16_t addressH, uint16_t addressL, uint8_t* data)
 {
+	printf("\nIn write H: %x\n", addressH);
+	printf("In write L: %x\n", addressL);	
+	
 	LOW_CS();
 	
 	//Send write command
