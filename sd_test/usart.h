@@ -9,7 +9,7 @@
 #ifndef USART_H_
 #define USART_H_
 
-#define BAUD_RATE 57600
+#define BAUD_RATE 115200
 
 #if (BAUD_RATE == 115200)
 #define BAUD_RATE_UBRR 8

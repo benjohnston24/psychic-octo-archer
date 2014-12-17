@@ -5,8 +5,6 @@
  *  Author: benj1
  */ 
 
-#include <avr/io.h>
-
 #include <stdio.h>
 #include <avr/io.h>
 

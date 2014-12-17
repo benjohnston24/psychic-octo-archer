@@ -6,7 +6,7 @@
  */ 
 
 #include <stdio.h>
-#include <avr/delay.h>
+#include <util/delay.h>
 #include "spi.h"
 #include "sd.h"
 
@@ -67,23 +67,31 @@ uint8_t sd_init(void)
 		
 	LOW_CS();
 	
+	#ifdef DEBUG_SD
 	printf("Send idle command\n");
+	#endif
 	
 	//Request the card to go into idle state
     send_command(GO_IDLE_STATE, 0x00, 0x00, IDLE_CRC);
 	
-	printf("Waiting for response\n");	
+	#ifdef DEBUG_SD
+	printf("Waiting for response\n");
+	#endif		
 	
 	//Check for the correct response
 	if (check_response(IN_IDLE) != 1)
 	{
+		#ifdef DEBUG_SD
 		printf("SD card idle timeout\n");
+		#endif		
 		HIGH_CS();		
 		return 0;
 	}
 	
 	HIGH_CS();	
+	#ifdef DEBUG_SD
 	printf("In idle state\n");
+	#endif	
 
 	spi_receive_byte();
 	LOW_CS();
@@ -101,17 +109,19 @@ uint8_t sd_init(void)
 		}
 	}
 	
-	//printf("Sent op command: %d\n", i);
-	
 	//Check for the correct response
 	if (i == 254)
 	{
+		#ifdef DEBUG_SD
 		printf("SD card initialise timeout\n");
+		#endif
 		HIGH_CS();			
 		return 0;
 	}	
 	
+	#ifdef DEBUG_SD
 	printf("In initial state\n");
+	#endif	
 	
 	HIGH_CS();
 	
@@ -122,17 +132,20 @@ uint8_t sd_init(void)
 	
 	//Set the block length
 	set_block_length(SET_BLOCKLEN);
-	//send_command(SET_BLOCKLEN, BLOCK_LEN_HIGH, BLOCK_LEN_LOW, NO_CRC);
 	
 	//Check for the correct response
 	if (check_response(OK) != 1)
 	{
+		#ifdef DEBUG_SD
 		printf("SD card block length timeout\n");
+		#endif		
 		HIGH_CS();			
 		return 0;
 	}	
 	
+	#ifdef DEBUG_SD
 	printf("Block length set\n");
+	#endif	
 	//When finished send CS high
 	HIGH_CS();
 	return 1;	
@@ -151,7 +164,9 @@ uint8_t write_sector(uint16_t addressH, uint16_t addressL, uint8_t* data)
 	//Check for the correct response
 	if (check_response(OK) != 1)
 	{
+		#ifdef DEBUG_SD
 		printf("SD card write request timeout\n");
+		#endif		
 		HIGH_CS();			
 		return 0;
 	}
@@ -169,48 +184,65 @@ uint8_t write_sector(uint16_t addressH, uint16_t addressL, uint8_t* data)
 	spi_send_byte(0xFF);
 	spi_send_byte(0xFF);	
 		
+	#ifdef DEBUG_SD
 	printf("Waiting for data to be written\n");
+	#endif		
 	//Check response
 	if (check_response(DATA_WRITTEN) != 1)
 	{
+		#ifdef DEBUG_SD
 		printf("SD card data not written correctly\n");
+		#endif
 		HIGH_CS();			
 		return 0;
 	}
 	
 	//Wait until write procedure is complete
+	#ifdef DEBUG_SD
 	printf("SD waiting for write to be done\n");
-	//while(spi_receive_byte() == 0x00);
-	uint16_t i;
-	for (i = 0;  i < 1024; i++)
+	#endif
+	
+	for (uint16_t i = 0;  i < 1024; i++)
 	{
 		if(spi_receive_byte() != 0x00)
 		{
 			//Complete
-			printf("SD card write done\n");			
+			#ifdef DEBUG_SD
+			printf("SD card write done\n");
+			#endif				
 			return 1;
 		}
 	}
-	printf("%d\n", i);
+	
+	#ifdef DEBUG_SD
+	printf("SD waiting for write to be done\n");
 	printf("Status request\n");
-	send_command(13, 0, 0, NO_CRC);
+	#endif
+	
+	send_command(STATUS_REQUEST, 0, 0, NO_CRC);
 	if (check_response(OK) != 1)
 	{
+		#ifdef DEBUG_SD
 		printf("SD card write status request timeout\n");
+		#endif		
 		HIGH_CS();
 		return 0;
 	}		
 	
 	if (check_response(OK) != 1)
 	{
+		#ifdef DEBUG_SD
 		printf("SD card write R1 error\n");
+		#endif		
 		HIGH_CS();
 		return 0;
 	}
 	
 	if (check_response(OK) != 1)
 	{
+		#ifdef DEBUG_SD
 		printf("SD card write R2 error\n");
+		#endif		
 		HIGH_CS();
 		return 0;
 	}		
@@ -227,31 +259,53 @@ uint8_t read_sector(uint16_t addressH, uint16_t addressL, uint8_t* data)
 		
 	//Send read command
 	send_command(READ_SINGLE_BLOCK, addressH, addressL, NO_CRC);
+	
+	#ifdef DEBUG_SD
 	printf("Waiting for read response\n");
+	#endif
+	
 	//Check for the correct response
 	if (check_response(OK) != 1)
 	{
+		#ifdef DEBUG_SD
 		printf("SD card read request timeout\n");
+		#endif		
 		HIGH_CS();			
 		return 0;
 	}
-	printf("Waiting for data token\n");	
+	
+	#ifdef DEBUG_SD
+	printf("Waiting for data token\n");
+	#endif
+		
 	//Wait for data token
 	if (check_response(DATA_TOKEN) != 1)
 	{
+		#ifdef DEBUG_SD
 		printf("SD card read data token timeout\n");
+		#endif		
 		HIGH_CS();
 		return 0;
 	}
-	printf("Data Token Received\n");	
+	
+	#ifdef DEBUG_SD
+	printf("Data Token Received\n");
+	#endif	
 	
 	//Get data
-	printf("Waiting for Data\n");			
+	#ifdef DEBUG_SD
+	printf("Waiting for Data\n");
+	#endif	
+			
 	for (uint16_t i = 0; i < BLOCK_SIZE; i++)
 	{
 		data[i] = spi_receive_byte();
 	}
-	printf("Data Received\n");		
+	
+	#ifdef DEBUG_SD
+	printf("Data Received\n");
+	#endif
+		
 	
 	//Discard the CRC
 	spi_receive_byte();

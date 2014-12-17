@@ -9,12 +9,15 @@
 #ifndef SD_H_
 #define SD_H_
 
+//#define DEBUG_SD 1 
+
 #define CMD_SIZE 6
 #define GO_IDLE_STATE 0 //Software reset
 #define SEND_OP_COND 1 //Initiate initialisation process
 #define READ_CSD 9 //Read CSD register
 #define READ_CID 10 //Read CID register
 #define STOP_TRANSMISSION 12 //Stop to read data
+#define STATUS_REQUEST 13 //Request the status fo the device.
 #define SET_BLOCKLEN 16 //Change R/W block size
 #define READ_SINGLE_BLOCK 17 //Read a block of data
 #define READ_MULTIPLE_BLOCKS 18 //Read multiple blocks of data
@@ -41,7 +44,7 @@
 void send_command(uint8_t CMD, unsigned int argH, unsigned int argL, uint8_t CRC);
 uint8_t check_response(uint8_t test_response);
 uint8_t sd_init(void);
-uint8_t write_sector(unsigned int addressH, unsigned int addressL, uint8_t* data);
-uint8_t read_sector(unsigned int addressH, unsigned int addressL, uint8_t* data);
+uint8_t write_sector(unsigned int addressH, unsigned int addressL, uint8_t *data);
+uint8_t read_sector(unsigned int addressH, unsigned int addressL, uint8_t *data);
 
 #endif /* SD_H_ */

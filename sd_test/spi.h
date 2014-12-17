@@ -14,6 +14,7 @@
 #define LOW_CS()	PORTB &= ~_BV(DDB2);
 
 void spi_init(void);
+void spi_send_byte(uint8_t byte);
 char spi_receive_byte(void);
 void spi_send(uint8_t* data, uint16_t length);
 
