@@ -68,14 +68,14 @@ uint8_t sd_init(void)
 	LOW_CS();
 	
 	#ifdef DEBUG_SD
-	printf("Send idle command\n");
+	printf("SD Send idle command\n");
 	#endif
 	
 	//Request the card to go into idle state
     send_command(GO_IDLE_STATE, 0x00, 0x00, IDLE_CRC);
 	
 	#ifdef DEBUG_SD
-	printf("Waiting for response\n");
+	printf("SD Waiting for response\n");
 	#endif		
 	
 	//Check for the correct response
@@ -90,7 +90,7 @@ uint8_t sd_init(void)
 	
 	HIGH_CS();	
 	#ifdef DEBUG_SD
-	printf("In idle state\n");
+	printf("SD In idle state\n");
 	#endif	
 
 	spi_receive_byte();
@@ -120,7 +120,7 @@ uint8_t sd_init(void)
 	}	
 	
 	#ifdef DEBUG_SD
-	printf("In initial state\n");
+	printf("SD In initial state\n");
 	#endif	
 	
 	HIGH_CS();
@@ -144,7 +144,7 @@ uint8_t sd_init(void)
 	}	
 	
 	#ifdef DEBUG_SD
-	printf("Block length set\n");
+	printf("SD Block length set\n");
 	#endif	
 	//When finished send CS high
 	HIGH_CS();
@@ -185,7 +185,7 @@ uint8_t write_sector(uint16_t addressH, uint16_t addressL, uint8_t* data)
 	spi_send_byte(0xFF);	
 		
 	#ifdef DEBUG_SD
-	printf("Waiting for data to be written\n");
+	printf("SD Waiting for data to be written\n");
 	#endif		
 	//Check response
 	if (check_response(DATA_WRITTEN) != 1)
@@ -216,7 +216,7 @@ uint8_t write_sector(uint16_t addressH, uint16_t addressL, uint8_t* data)
 	
 	#ifdef DEBUG_SD
 	printf("SD waiting for write to be done\n");
-	printf("Status request\n");
+	printf("SD Status request\n");
 	#endif
 	
 	send_command(STATUS_REQUEST, 0, 0, NO_CRC);
@@ -261,7 +261,7 @@ uint8_t read_sector(uint16_t addressH, uint16_t addressL, uint8_t* data)
 	send_command(READ_SINGLE_BLOCK, addressH, addressL, NO_CRC);
 	
 	#ifdef DEBUG_SD
-	printf("Waiting for read response\n");
+	printf("SD Waiting for read response\n");
 	#endif
 	
 	//Check for the correct response
@@ -275,7 +275,7 @@ uint8_t read_sector(uint16_t addressH, uint16_t addressL, uint8_t* data)
 	}
 	
 	#ifdef DEBUG_SD
-	printf("Waiting for data token\n");
+	printf("SD Waiting for data token\n");
 	#endif
 		
 	//Wait for data token
@@ -289,12 +289,12 @@ uint8_t read_sector(uint16_t addressH, uint16_t addressL, uint8_t* data)
 	}
 	
 	#ifdef DEBUG_SD
-	printf("Data Token Received\n");
+	printf("SD Data Token Received\n");
 	#endif	
 	
 	//Get data
 	#ifdef DEBUG_SD
-	printf("Waiting for Data\n");
+	printf("SD Waiting for Data\n");
 	#endif	
 			
 	for (uint16_t i = 0; i < BLOCK_SIZE; i++)
@@ -303,7 +303,7 @@ uint8_t read_sector(uint16_t addressH, uint16_t addressL, uint8_t* data)
 	}
 	
 	#ifdef DEBUG_SD
-	printf("Data Received\n");
+	printf("SD Data Received\n");
 	#endif
 		
 	

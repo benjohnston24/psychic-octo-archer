@@ -9,20 +9,18 @@
 #ifndef USART_H_
 #define USART_H_
 
-#define BAUD_RATE 115200
-
-#if (BAUD_RATE == 115200)
-#define BAUD_RATE_UBRR 8
-#elif (BAUD_RATE == 57600)
-#define BAUD_RATE_UBRR 16
-#else
+#define BAUD_RATE 9600
+#define F_CPU 16000000
 #define BAUD_RATE_UBRR (F_CPU/16/BAUD_RATE - 1)
-#endif
+#define BUFFER_SIZE 20
+
+unsigned char usart_rx_buffer[BUFFER_SIZE];
 
 void usart_init(void);
 void usart_write(uint8_t byte);
 uint8_t usart_read(void);
 int usart_stream_write(char c, FILE *stream);
+void usart_disable_receive_interrupt(void);
 
 #define TRANSMIT 1
 

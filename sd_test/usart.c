@@ -11,13 +11,18 @@
 void usart_init(void)
 {
 	// Setup the UART baud rate
-	UBRR0H = (BAUD_RATE_UBRR >> 8);
-	UBRR0L = BAUD_RATE_UBRR;
+	UBRR0H = (unsigned char)(BAUD_RATE_UBRR >> 8);
+	UBRR0L = (unsigned char)BAUD_RATE_UBRR;
 
 	// Enable the UART receiver and transceiver
-	UCSR0B = _BV(RXEN0) | _BV(TXEN0);
+	UCSR0B = _BV(RXEN0) | _BV(TXEN0) | _BV(RXCIE0);
 	// Set the frame format : 8 bits data, 1 bit stop
 	UCSR0C = _BV(UCSZ01) | _BV(UCSZ00);
+}
+
+void usart_disable_receive_interrupt(void)
+{
+	UCSR0B |= (0 << RXCIE0);
 }
 
 void usart_write(uint8_t byte)
