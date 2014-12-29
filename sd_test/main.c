@@ -15,13 +15,20 @@
 #include "adc.h"
 #include "timing.h"
 
-uint16_t step = 0, data_counter = 0, block_counter = 1, memory_block = 0;
+#define NO_TASK 0
+#define NEW_TASK_ID 1
+#define GET_DATA_ID 2
+#define CLEAR_DATA_ID 3
+
+uint16_t step = 0, data_counter = 0, prev_data_counter = 0, block_counter = 1, memory_block = 0;
 uint8_t counter = 0, duration = 0, channel = 1, timer_running = 0, trigger_log = 0, fake_data = 0, trigger_start = 0;
 uint8_t usart_data = 0, error_flag = 0, downsample_counter = 0;
+uint8_t task_selection = NO_TASK;
 uint8_t data[BLOCK_SIZE];
 const char *connect = "OK\n";
+const char *new_test ="new_test\n";
 
-//#define DEBUG_MAIN 1
+#define DEBUG_MAIN 1
 
 
 //Interrupt service routine for analogue to digital converter
@@ -43,7 +50,8 @@ ISR(ADC_vect)
 	{
 		data[data_counter++] = channel;	
 		/********************TEMP******************************/
-		data[data_counter++] = (uint16_t) fake_data++;		
+		//data[data_counter++] = (uint16_t) fake_data++;
+		data[data_counter++] = (uint16_t) ADCW;				
 	}
 	
 	
@@ -53,6 +61,7 @@ ISR(ADC_vect)
 		//#ifdef DEBUG_MAIN
 		//	printf("Data collected, block %d full\n", block_counter);
 		//#endif
+		prev_data_counter = data_counter;
 		data_counter = 0;
         trigger_log = 1;		
 	}
@@ -65,7 +74,6 @@ ISR(ADC_vect)
 	//Only read channels 1 to 3
 	if (channel >= 4)
 	{
-		
 		downsample_counter++;
 		channel = 1;
 		if (downsample_counter >= 4)
@@ -97,6 +105,10 @@ ISR(USART_RX_vect)
 		{
 			trigger_start = 1;
 		}
+		else if (strstr(usart_rx_buffer, new_test) != NULL)
+		{
+			task_selection = NEW_TASK_ID;
+		}		
 	}
 	
 }
@@ -157,18 +169,35 @@ int main(void)
 		    #ifdef DEBUG_MAIN
 		    printf("SD Initialised\n");
 		    #endif
-		    step = 20;
+		    step = 11;
 	    }
 	    else{ step = 999;}
-	    break;					
+	    break;	
+		
+		case 11:
+			//Print the task list
+			printf("Task selection\n");
+			printf("1: Execute New Test\n");
+			sei();				
+			step = 12;
+			break;
+			
+		case 12:
+			//Get the selection
+			if (task_selection == NEW_TASK_ID)
+			{
+				printf("Starting task\n");
+				task_selection = NO_TASK;
+				step = 20;
+			}
+			break;
 			
 		case 20:
 			timer1_overflow_init();
 			channel = 1;
             adc_init();
 			#ifdef DEBUG_MAIN
-				printf("\n\n\n\n\n-------------------------------------------\n");
-				printf("Systems Configured\n");
+				printf("Starting Timer\n");
 			#endif
 			
 			step = 30;
@@ -213,7 +242,8 @@ int main(void)
 				#ifdef DEBUG_MAIN				
 					printf("Logging block counter %d\n", block_counter);
 					printf("Logging memory block %x\n", memory_block);	
-				#endif			
+					printf("Data counter %d\n", prev_data_counter);					
+				#endif	
 				if (write_sector(memory_block >> 8,memory_block & 0x00FF, data) != 1)	
 				{
 					//An error has occurred during writing
